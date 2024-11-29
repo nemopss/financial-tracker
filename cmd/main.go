@@ -7,7 +7,7 @@ import (
 
 	"github.com/nemopss/financial-tracker/config"
 	"github.com/nemopss/financial-tracker/internal/handlers"
-	"github.com/nemopss/financial-tracker/internal/handlers/middleware"
+	"github.com/nemopss/financial-tracker/internal/middleware"
 	"github.com/nemopss/financial-tracker/internal/repository"
 )
 
@@ -26,10 +26,19 @@ func main() {
 		JWTSecret: cfg.JWTSecret,
 	}
 
+	categoryHandler := &handlers.CategoryHandler{Repo: db}
+
 	protected := middleware.AuthMiddleware(cfg.JWTSecret)
 
+	// AUTH
 	http.HandleFunc("/api/v1/register", authHandler.Register)
 	http.HandleFunc("/api/v1/login", authHandler.Login)
+
+	//Categories
+	http.Handle("/api/v1/categories", protected(http.HandlerFunc(categoryHandler.CreateCategory)))
+	http.Handle("/api/v1/categories/list", protected(http.HandlerFunc(categoryHandler.GetCategories)))
+	http.Handle("/api/v1/categories/update", protected(http.HandlerFunc(categoryHandler.UpdateCategory)))
+	http.Handle("/api/v1/categories/delete", protected(http.HandlerFunc(categoryHandler.DeleteCategory)))
 
 	http.Handle("/api/v1/protected", protected(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value(middleware.UserIDKey).(int)
