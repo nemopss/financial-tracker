@@ -51,6 +51,8 @@ func main() {
 	// Analytics
 	http.Handle("/api/v1/analytics/income-expenses", protected(http.HandlerFunc(analyticsHandler.GetIncomeAndExpenses)))
 	http.Handle("/api/v1/analytics/categories", protected(http.HandlerFunc(analyticsHandler.GetCategoryAnalytics)))
+	http.Handle("/api/v1/analytics/income-expenses-filtered", protected(http.HandlerFunc(analyticsHandler.GetIncomeAndExpensesFiltered)))
+	http.Handle("/api/v1/analytics/categories-filtered", protected(http.HandlerFunc(analyticsHandler.GetCategoryAnalyticsFiltered)))
 
 	http.Handle("/api/v1/protected", protected(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value(middleware.UserIDKey).(int)
