@@ -59,6 +59,7 @@ func (h *TransactionHandler) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	txn.UserID = userID
+	txn.Date = time.Now()
 
 	if err := h.Repo.UpdateTransaction(context.Background(), txn); err != nil {
 		http.Error(w, "Failed to update transaction", http.StatusInternalServerError)

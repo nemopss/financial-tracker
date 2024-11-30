@@ -28,6 +28,7 @@ func main() {
 
 	categoryHandler := &handlers.CategoryHandler{Repo: db}
 	transactionHandler := &handlers.TransactionHandler{Repo: db}
+	analyticsHandler := &handlers.AnalyticsHandler{Repo: db}
 
 	protected := middleware.AuthMiddleware(cfg.JWTSecret)
 
@@ -46,6 +47,10 @@ func main() {
 	http.Handle("/api/v1/transactions/list", protected(http.HandlerFunc(transactionHandler.GetTransactions)))
 	http.Handle("/api/v1/transactions/update", protected(http.HandlerFunc(transactionHandler.UpdateTransaction)))
 	http.Handle("/api/v1/transactions/delete", protected(http.HandlerFunc(transactionHandler.DeleteTransaction)))
+
+	// Analytics
+	http.Handle("/api/v1/analytics/income-expenses", protected(http.HandlerFunc(analyticsHandler.GetIncomeAndExpenses)))
+	http.Handle("/api/v1/analytics/categories", protected(http.HandlerFunc(analyticsHandler.GetCategoryAnalytics)))
 
 	http.Handle("/api/v1/protected", protected(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value(middleware.UserIDKey).(int)
