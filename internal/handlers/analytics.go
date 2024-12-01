@@ -10,7 +10,7 @@ import (
 )
 
 type AnalyticsHandler struct {
-	Repo *repository.DB
+	Repo repository.Repository
 }
 
 func (h *AnalyticsHandler) GetIncomeAndExpenses(w http.ResponseWriter, r *http.Request) {

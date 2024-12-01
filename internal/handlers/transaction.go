@@ -13,7 +13,7 @@ import (
 )
 
 type TransactionHandler struct {
-	Repo *repository.DB
+	Repo repository.Repository
 }
 
 func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Request) {

@@ -14,7 +14,7 @@ import (
 )
 
 type AuthHandler struct {
-	Repo      *repository.DB
+	Repo      repository.Repository
 	JWTSecret string
 }
 
@@ -84,7 +84,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := generateJWT(user.ID, h.JWTSecret)
 	if err != nil {
-		log.Printf("Failed to generate token: %v", err)
 		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}

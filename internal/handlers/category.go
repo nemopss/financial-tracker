@@ -12,7 +12,7 @@ import (
 )
 
 type CategoryHandler struct {
-	Repo *repository.DB
+	Repo repository.Repository
 }
 
 func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
