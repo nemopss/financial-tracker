@@ -57,10 +57,8 @@ func AuthGin(secret string) gin.HandlerFunc {
 			return
 		}
 
-		// Сохраняем userID в контекст Gin
 		c.Set(UserIDKey, int(userID))
 
-		// Продолжаем выполнение следующего обработчика
 		c.Next()
 	}
 }
