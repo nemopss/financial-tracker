@@ -1,78 +1,114 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/nemopss/financial-tracker/internal/middleware"
+	"github.com/gin-gonic/gin"
 	"github.com/nemopss/financial-tracker/internal/repository"
-	"github.com/nemopss/financial-tracker/internal/response"
 )
 
 type AnalyticsHandler struct {
 	Repo repository.Repository
 }
 
-func (h *AnalyticsHandler) GetIncomeAndExpenses(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(int)
+// Handlers
 
-	analytics, err := h.Repo.GetIncomeAndExpenses(context.Background(), userID)
+// GetIncomeAndExpensesGin handles fetching income and expenses analytics.
+// @Summary Get income and expenses
+// @Description Fetch total income and expenses for the authenticated user
+// @Tags Analytics
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} repository.Analytics
+// @Router /analytics/income-expenses [get]
+func (h *AnalyticsHandler) GetIncomeAndExpensesGin(c *gin.Context) {
+	userID := c.GetInt("userID")
+
+	analytics, err := h.Repo.GetIncomeAndExpenses(c.Request.Context(), userID)
 	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "Failed to fetch analytics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch analytics"})
 		return
 	}
 
-	response.Success(w, http.StatusOK, analytics)
+	c.JSON(http.StatusOK, analytics)
 }
 
-func (h *AnalyticsHandler) GetIncomeAndExpensesFiltered(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(int)
+// GetIncomeAndExpensesFilteredGin handles fetching income and expenses analytics within a date range.
+// @Summary Get income and expenses (filtered)
+// @Description Fetch total income and expenses within a specific date range for the authenticated user
+// @Tags Analytics
+// @Produce json
+// @Security BearerAuth
+// @Param start_date query string true "Start date in YYYY-MM-DD format"
+// @Param end_date query string true "End date in YYYY-MM-DD format"
+// @Success 200 {object} repository.Analytics
+// @Router /analytics/income-expenses-filtered [get]
+func (h *AnalyticsHandler) GetIncomeAndExpensesFilteredGin(c *gin.Context) {
+	userID := c.GetInt("userID")
 
-	startDate := r.URL.Query().Get("start_date")
-	endDate := r.URL.Query().Get("end_date")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
 
 	if startDate == "" || endDate == "" {
-		response.Error(w, http.StatusBadRequest, "Start date and end date are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Start date and end date are required"})
 		return
 	}
 
-	analytics, err := h.Repo.GetIncomeAndExpensesFiltered(context.Background(), userID, startDate, endDate)
+	analytics, err := h.Repo.GetIncomeAndExpensesFiltered(c.Request.Context(), userID, startDate, endDate)
 	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "Failed to fetch filtered analytics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch filtered analytics"})
 		return
 	}
 
-	response.Success(w, http.StatusOK, analytics)
+	c.JSON(http.StatusOK, analytics)
 }
 
-func (h *AnalyticsHandler) GetCategoryAnalytics(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(int)
+// GetCategoryAnalyticsGin handles fetching category-based analytics.
+// @Summary Get category analytics
+// @Description Fetch total expenses per category for the authenticated user
+// @Tags Analytics
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} repository.CategoryAnalytics
+// @Router /analytics/categories [get]
+func (h *AnalyticsHandler) GetCategoryAnalyticsGin(c *gin.Context) {
+	userID := c.GetInt("userID")
 
-	analytics, err := h.Repo.GetCategoryAnalytics(context.Background(), userID)
+	analytics, err := h.Repo.GetCategoryAnalytics(c.Request.Context(), userID)
 	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "Failed to fetch analytics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch category analytics"})
 		return
 	}
 
-	response.Success(w, http.StatusOK, analytics)
+	c.JSON(http.StatusOK, analytics)
 }
 
-func (h *AnalyticsHandler) GetCategoryAnalyticsFiltered(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDKey).(int)
+// GetCategoryAnalyticsFilteredGin handles fetching category-based analytics within a date range.
+// @Summary Get category analytics (filtered)
+// @Description Fetch total expenses per category within a specific date range for the authenticated user
+// @Tags Analytics
+// @Produce json
+// @Security BearerAuth
+// @Param start_date query string true "Start date in YYYY-MM-DD format"
+// @Param end_date query string true "End date in YYYY-MM-DD format"
+// @Success 200 {array} repository.CategoryAnalytics
+// @Router /analytics/categories-filtered [get]
+func (h *AnalyticsHandler) GetCategoryAnalyticsFilteredGin(c *gin.Context) {
+	userID := c.GetInt("userID")
 
-	startDate := r.URL.Query().Get("start_date")
-	endDate := r.URL.Query().Get("end_date")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
 
 	if startDate == "" || endDate == "" {
-		response.Error(w, http.StatusBadRequest, "Start date and end date are required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Start date and end date are required"})
 		return
 	}
 
-	analytics, err := h.Repo.GetCategoryAnalyticsFiltered(context.Background(), userID, startDate, endDate)
+	analytics, err := h.Repo.GetCategoryAnalyticsFiltered(c.Request.Context(), userID, startDate, endDate)
 	if err != nil {
-		response.Error(w, http.StatusInternalServerError, "Failed to fetch analytics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch category analytics"})
 		return
 	}
 
-	response.Success(w, http.StatusOK, analytics)
+	c.JSON(http.StatusOK, analytics)
 }

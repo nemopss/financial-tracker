@@ -1,66 +1,96 @@
+// @title Financial Tracker API
+// @version 1.0
+// @description This is a simple API for a financial tracking system.
+
+// @contact.name API Support
+// @contact.email alexey_gladilin@mail.ru
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (
 	"log"
-	"net/http"
-	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"github.com/nemopss/financial-tracker/config"
+	_ "github.com/nemopss/financial-tracker/docs" // Swagger docs
 	"github.com/nemopss/financial-tracker/internal/handlers"
 	"github.com/nemopss/financial-tracker/internal/middleware"
 	"github.com/nemopss/financial-tracker/internal/repository"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
+	// Load configuration
 	cfg := config.LoadConfig()
+	if cfg.JWTSecret == "" || cfg.Port == "" || cfg.DBHost == "" {
+		log.Fatal("Missing critical configuration values")
+	}
 
+	// Connect to the database
 	db, err := repository.NewDB(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-
 	defer db.Conn.Close()
 
-	authHandler := &handlers.AuthHandler{
-		Repo:      db,
-		JWTSecret: cfg.JWTSecret,
-	}
-
+	// Initialize handlers
+	authHandler := &handlers.AuthHandler{Repo: db, JWTSecret: cfg.JWTSecret}
 	categoryHandler := &handlers.CategoryHandler{Repo: db}
 	transactionHandler := &handlers.TransactionHandler{Repo: db}
 	analyticsHandler := &handlers.AnalyticsHandler{Repo: db}
 
-	protected := middleware.AuthMiddleware(cfg.JWTSecret)
+	// Initialize Gin
+	r := gin.Default()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 
-	// AUTH
-	http.HandleFunc("/api/v1/register", authHandler.Register)
-	http.HandleFunc("/api/v1/login", authHandler.Login)
+	// Swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Categories
-	http.Handle("/api/v1/categories", protected(http.HandlerFunc(categoryHandler.CreateCategory)))
-	http.Handle("/api/v1/categories/list", protected(http.HandlerFunc(categoryHandler.GetCategories)))
-	http.Handle("/api/v1/categories/update", protected(http.HandlerFunc(categoryHandler.UpdateCategory)))
-	http.Handle("/api/v1/categories/delete", protected(http.HandlerFunc(categoryHandler.DeleteCategory)))
+	// API routes
+	api := r.Group("/api/v1")
+	{
+		// Auth routes
+		api.POST("/auth/register", authHandler.RegisterGin)
+		api.POST("/auth/login", authHandler.LoginGin)
 
-	// Transactions
-	http.Handle("/api/v1/transactions", protected(http.HandlerFunc(transactionHandler.CreateTransaction)))
-	http.Handle("/api/v1/transactions/list", protected(http.HandlerFunc(transactionHandler.GetTransactions)))
-	http.Handle("/api/v1/transactions/update", protected(http.HandlerFunc(transactionHandler.UpdateTransaction)))
-	http.Handle("/api/v1/transactions/delete", protected(http.HandlerFunc(transactionHandler.DeleteTransaction)))
+		// Protected routes
+		protected := api.Group("/", middleware.AuthGin(cfg.JWTSecret))
+		{
+			// Categories
+			protected.POST("/categories", categoryHandler.CreateCategoryGin)
+			protected.GET("/categories/list", categoryHandler.GetCategoriesGin)
+			protected.PUT("/categories/update", categoryHandler.UpdateCategoryGin)
+			protected.DELETE("/categories/delete", categoryHandler.DeleteCategoryGin)
 
-	// Analytics
-	http.Handle("/api/v1/analytics/income-expenses", protected(http.HandlerFunc(analyticsHandler.GetIncomeAndExpenses)))
-	http.Handle("/api/v1/analytics/categories", protected(http.HandlerFunc(analyticsHandler.GetCategoryAnalytics)))
-	http.Handle("/api/v1/analytics/income-expenses-filtered", protected(http.HandlerFunc(analyticsHandler.GetIncomeAndExpensesFiltered)))
-	http.Handle("/api/v1/analytics/categories-filtered", protected(http.HandlerFunc(analyticsHandler.GetCategoryAnalyticsFiltered)))
+			// Transactions
+			protected.POST("/transactions", transactionHandler.CreateTransactionGin)
+			protected.GET("/transactions/list", transactionHandler.GetTransactionsGin)
+			protected.PUT("/transactions/update", transactionHandler.UpdateTransactionGin)
+			protected.DELETE("/transactions/delete", transactionHandler.DeleteTransactionGin)
 
-	http.Handle("/api/v1/protected", protected(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Context().Value(middleware.UserIDKey).(int)
-		w.Write([]byte("Protected content for user ID: " + strconv.Itoa(userID) + "\n"))
-	})))
+			// Analytics
+			protected.GET("/analytics/income-expenses", analyticsHandler.GetIncomeAndExpensesGin)
+			protected.GET("/analytics/categories", analyticsHandler.GetCategoryAnalyticsGin)
+			protected.GET("/analytics/income-expenses-filtered", analyticsHandler.GetIncomeAndExpensesFilteredGin)
+			protected.GET("/analytics/categories-filtered", analyticsHandler.GetCategoryAnalyticsFilteredGin)
+		}
+	}
 
+	// Start server
 	log.Printf("Starting server on port %s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, nil); err != nil {
+	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

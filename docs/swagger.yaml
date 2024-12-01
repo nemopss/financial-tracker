@@ -1,0 +1,461 @@
+basePath: /api/v1
+definitions:
+  handlers.CategoryListResponse:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/repository.Category'
+        type: array
+    type: object
+  handlers.CreateCategoryRequest:
+    properties:
+      name:
+        example: Groceries
+        type: string
+    required:
+    - name
+    type: object
+  handlers.CreateCategoryResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+    type: object
+  handlers.CreateTransactionRequest:
+    properties:
+      amount:
+        example: 100.5
+        type: number
+      category_id:
+        example: 1
+        type: integer
+      date:
+        example: "2024-12-01T15:04:05Z"
+        type: string
+      description:
+        example: Grocery shopping
+        type: string
+    type: object
+  handlers.CreateTransactionResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+    type: object
+  handlers.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handlers.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  handlers.RegisterRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handlers.UpdateCategoryRequest:
+    properties:
+      name:
+        example: Updated Category
+        type: string
+    required:
+    - name
+    type: object
+  repository.Analytics:
+    properties:
+      total_expense:
+        type: number
+      total_income:
+        type: number
+    type: object
+  repository.Category:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  repository.CategoryAnalytics:
+    properties:
+      category_name:
+        type: string
+      total_amount:
+        type: number
+    type: object
+  repository.Transaction:
+    properties:
+      amount:
+        type: number
+      category_id:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      time:
+        type: string
+      user_id:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: alexey_gladilin@mail.ru
+    name: API Support
+  description: This is a simple API for a financial tracking system.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Financial Tracker API
+  version: "1.0"
+paths:
+  /analytics/categories:
+    get:
+      description: Fetch total expenses per category for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.CategoryAnalytics'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get category analytics
+      tags:
+      - Analytics
+  /analytics/categories-filtered:
+    get:
+      description: Fetch total expenses per category within a specific date range
+        for the authenticated user
+      parameters:
+      - description: Start date in YYYY-MM-DD format
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date in YYYY-MM-DD format
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.CategoryAnalytics'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get category analytics (filtered)
+      tags:
+      - Analytics
+  /analytics/income-expenses:
+    get:
+      description: Fetch total income and expenses for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Analytics'
+      security:
+      - BearerAuth: []
+      summary: Get income and expenses
+      tags:
+      - Analytics
+  /analytics/income-expenses-filtered:
+    get:
+      description: Fetch total income and expenses within a specific date range for
+        the authenticated user
+      parameters:
+      - description: Start date in YYYY-MM-DD format
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date in YYYY-MM-DD format
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.Analytics'
+      security:
+      - BearerAuth: []
+      summary: Get income and expenses (filtered)
+      tags:
+      - Analytics
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: Login data
+        in: body
+        name: loginRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with a username and password
+      parameters:
+      - description: Registration data
+        in: body
+        name: registerRequest
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+  /categories:
+    post:
+      consumes:
+      - application/json
+      description: Create a category for the authenticated user
+      parameters:
+      - description: Category data
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreateCategoryResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new category
+      tags:
+      - Categories
+  /categories/delete:
+    delete:
+      description: Delete a category by ID for the authenticated user
+      parameters:
+      - description: Category ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete a category
+      tags:
+      - Categories
+  /categories/list:
+    get:
+      description: Fetch all categories for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CategoryListResponse'
+      security:
+      - BearerAuth: []
+      summary: Get categories
+      tags:
+      - Categories
+  /categories/update:
+    put:
+      consumes:
+      - application/json
+      description: Update a category by ID for the authenticated user
+      parameters:
+      - description: Category ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Category data
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Update a category
+      tags:
+      - Categories
+  /transactions:
+    post:
+      consumes:
+      - application/json
+      description: Add a new transaction for the authenticated user
+      parameters:
+      - description: Transaction data (date is optional, defaults to now)
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreateTransactionResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new transaction
+      tags:
+      - Transactions
+  /transactions/delete:
+    delete:
+      description: Delete a transaction by ID for the authenticated user
+      parameters:
+      - description: Transaction ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete a transaction
+      tags:
+      - Transactions
+  /transactions/list:
+    get:
+      description: Fetch all transactions for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/repository.Transaction'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get transactions
+      tags:
+      - Transactions
+  /transactions/update:
+    put:
+      consumes:
+      - application/json
+      description: Update a transaction for the authenticated user
+      parameters:
+      - description: Transaction data (include transaction ID)
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/repository.Transaction'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Update a transaction
+      tags:
+      - Transactions
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
