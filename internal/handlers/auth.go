@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/nemopss/financial-tracker/internal/repository"
+	"github.com/nemopss/financial-tracker/internal/response"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -25,35 +26,33 @@ type RegisterRequest struct {
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if req.Username == "" || req.Password == "" {
-		http.Error(w, "Username and password are required", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Username and password are required")
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Printf("Failed to hash password: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	id, err := h.Repo.CreateUser(context.Background(), req.Username, string(hashedPassword))
 	if err != nil {
 		log.Printf("Failed to create user: %v", err)
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	response.Success(w, http.StatusCreated, map[string]interface{}{
 		"id":       id,
 		"username": req.Username,
 	})
-
 }
 
 type LoginRequest struct {
@@ -68,29 +67,29 @@ type LoginResponse struct {
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	user, err := h.Repo.GetUserByUsername(context.Background(), req.Username)
 	if err != nil || user == nil {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		response.Error(w, http.StatusUnauthorized, "Invalid username or password")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		response.Error(w, http.StatusUnauthorized, "Invalid username or password")
 		return
 	}
 
 	token, err := generateJWT(user.ID, h.JWTSecret)
 	if err != nil {
 		log.Printf("Failed to generate token: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	json.NewEncoder(w).Encode(LoginResponse{Token: token})
+	response.Success(w, http.StatusOK, LoginResponse{Token: token})
 }
 
 func generateJWT(userID int, secret string) (string, error) {

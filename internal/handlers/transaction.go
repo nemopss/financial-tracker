@@ -9,6 +9,7 @@ import (
 
 	"github.com/nemopss/financial-tracker/internal/middleware"
 	"github.com/nemopss/financial-tracker/internal/repository"
+	"github.com/nemopss/financial-tracker/internal/response"
 )
 
 type TransactionHandler struct {
@@ -20,7 +21,7 @@ func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Re
 
 	var txn repository.Transaction
 	if err := json.NewDecoder(r.Body).Decode(&txn); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
@@ -29,12 +30,11 @@ func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Re
 
 	id, err := h.Repo.CreateTransaction(context.Background(), txn)
 	if err != nil {
-		http.Error(w, "Failed to create transaction", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to create transaction")
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]int{"id": id})
+	response.Success(w, http.StatusCreated, map[string]int{"id": id})
 }
 
 func (h *TransactionHandler) GetTransactions(w http.ResponseWriter, r *http.Request) {
@@ -42,11 +42,11 @@ func (h *TransactionHandler) GetTransactions(w http.ResponseWriter, r *http.Requ
 
 	transactions, err := h.Repo.GetTransactions(context.Background(), userID)
 	if err != nil {
-		http.Error(w, "Failed to fetch transactions", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to fetch transactions")
 		return
 	}
 
-	json.NewEncoder(w).Encode(transactions)
+	response.Success(w, http.StatusOK, transactions)
 }
 
 func (h *TransactionHandler) UpdateTransaction(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func (h *TransactionHandler) UpdateTransaction(w http.ResponseWriter, r *http.Re
 
 	var txn repository.Transaction
 	if err := json.NewDecoder(r.Body).Decode(&txn); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
@@ -62,25 +62,25 @@ func (h *TransactionHandler) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	txn.Date = time.Now()
 
 	if err := h.Repo.UpdateTransaction(context.Background(), txn); err != nil {
-		http.Error(w, "Failed to update transaction", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to update transaction")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	response.Success(w, http.StatusNoContent, nil)
 }
 
 func (h *TransactionHandler) DeleteTransaction(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(int)
 	txnID, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil {
-		http.Error(w, "Invalid transaction ID", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Invalid transaction ID")
 		return
 	}
 
 	if err := h.Repo.DeleteTransaction(context.Background(), userID, txnID); err != nil {
-		http.Error(w, "Failed to delete transaction", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to delete transaction")
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	response.Success(w, http.StatusNoContent, nil)
 }

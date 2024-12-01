@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/nemopss/financial-tracker/internal/middleware"
 	"github.com/nemopss/financial-tracker/internal/repository"
+	"github.com/nemopss/financial-tracker/internal/response"
 )
 
 type AnalyticsHandler struct {
@@ -18,11 +18,11 @@ func (h *AnalyticsHandler) GetIncomeAndExpenses(w http.ResponseWriter, r *http.R
 
 	analytics, err := h.Repo.GetIncomeAndExpenses(context.Background(), userID)
 	if err != nil {
-		http.Error(w, "Failed to fetch analytics", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to fetch analytics")
 		return
 	}
 
-	json.NewEncoder(w).Encode(analytics)
+	response.Success(w, http.StatusOK, analytics)
 }
 
 func (h *AnalyticsHandler) GetIncomeAndExpensesFiltered(w http.ResponseWriter, r *http.Request) {
@@ -32,17 +32,17 @@ func (h *AnalyticsHandler) GetIncomeAndExpensesFiltered(w http.ResponseWriter, r
 	endDate := r.URL.Query().Get("end_date")
 
 	if startDate == "" || endDate == "" {
-		http.Error(w, "Start date and end date are required", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Start date and end date are required")
 		return
 	}
 
 	analytics, err := h.Repo.GetIncomeAndExpensesFiltered(context.Background(), userID, startDate, endDate)
 	if err != nil {
-		http.Error(w, "Failed to fetch filtered analytics", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to fetch filtered analytics")
 		return
 	}
 
-	json.NewEncoder(w).Encode(analytics)
+	response.Success(w, http.StatusOK, analytics)
 }
 
 func (h *AnalyticsHandler) GetCategoryAnalytics(w http.ResponseWriter, r *http.Request) {
@@ -50,11 +50,11 @@ func (h *AnalyticsHandler) GetCategoryAnalytics(w http.ResponseWriter, r *http.R
 
 	analytics, err := h.Repo.GetCategoryAnalytics(context.Background(), userID)
 	if err != nil {
-		http.Error(w, "Failed to fetch analytics", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to fetch analytics")
 		return
 	}
 
-	json.NewEncoder(w).Encode(analytics)
+	response.Success(w, http.StatusOK, analytics)
 }
 
 func (h *AnalyticsHandler) GetCategoryAnalyticsFiltered(w http.ResponseWriter, r *http.Request) {
@@ -64,15 +64,15 @@ func (h *AnalyticsHandler) GetCategoryAnalyticsFiltered(w http.ResponseWriter, r
 	endDate := r.URL.Query().Get("end_date")
 
 	if startDate == "" || endDate == "" {
-		http.Error(w, "Start date and end date are required", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "Start date and end date are required")
 		return
 	}
 
 	analytics, err := h.Repo.GetCategoryAnalyticsFiltered(context.Background(), userID, startDate, endDate)
 	if err != nil {
-		http.Error(w, "Failed to fetch analytics", http.StatusInternalServerError)
+		response.Error(w, http.StatusInternalServerError, "Failed to fetch analytics")
 		return
 	}
 
-	json.NewEncoder(w).Encode(analytics)
+	response.Success(w, http.StatusOK, analytics)
 }

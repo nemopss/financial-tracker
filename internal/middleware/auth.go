@@ -2,10 +2,12 @@ package middleware
 
 import (
 	"context"
-	"github.com/golang-jwt/jwt/v5"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/nemopss/financial-tracker/internal/response"
 )
 
 type contextKey string
@@ -17,13 +19,13 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "Authorization header missing")
 				return
 			}
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "Invalid Authorization header format")
 				return
 			}
 			tokenString := parts[1]
@@ -37,19 +39,19 @@ func AuthMiddleware(secret string) func(http.Handler) http.Handler {
 
 			if err != nil || !token.Valid {
 				log.Printf("Invalid token: %v", err)
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "Invalid token")
 				return
 			}
 
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok || claims["user_id"] == nil {
-				http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "Invalid token claims")
 				return
 			}
 
 			userID, ok := claims["user_id"].(float64)
 			if !ok {
-				http.Error(w, "Invalid user id", http.StatusUnauthorized)
+				response.Error(w, http.StatusUnauthorized, "Invalid user ID")
 				return
 			}
 
